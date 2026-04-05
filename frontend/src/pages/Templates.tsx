@@ -9,6 +9,7 @@ const Templates = () => {
   const [prompt, setPrompt] = useState('');
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
+  const [templateName, setTemplateName] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generateWithAI = async () => {
@@ -28,9 +29,17 @@ const Templates = () => {
     }
   };
 
-  const handleSave = () => {
-    // In a full implementation, you would save this to the DB.
-    toast.success("Template saved successfully! (Mock)");
+  const handleSave = async () => {
+    if (!content) return toast.error("Nothing to save!");
+    try {
+      await axios.post('http://localhost:5001/api/templates', { name: templateName || "AI Generated Template", subject, htmlContent: content }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success("Template saved successfully to your Directory!");
+      setTemplateName('');
+    } catch(err) {
+      toast.error("Failed to save template.");
+    }
   };
 
   return (
@@ -56,7 +65,10 @@ const Templates = () => {
 
         {/* Right Side: Preview Editor */}
         <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><FileText size={20} color="#6366f1" /> Editor</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FileText size={20} color="#6366f1" /> Editor</h3>
+            <input type="text" placeholder="Template Save Name" value={templateName} onChange={e => setTemplateName(e.target.value)} style={{ padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'white', outline: 'none' }} />
+          </div>
           
           <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Subject Line</label>
           <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', outline: 'none', marginBottom: '1.5rem' }} />

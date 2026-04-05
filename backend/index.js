@@ -10,6 +10,7 @@ import contactRoutes from "./routes/contactRoutes.js";
 import campaignRoutes from "./routes/campaignRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import templateRoutes from "./routes/templateRoutes.js";
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ app.use("/api/contacts", contactRoutes);
 app.use("/api/campaigns", campaignRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/templates", templateRoutes);
 app.get("/api/health", (req, res) => res.status(200).json({ status: "OK", awsRegion: process.env.AWS_REGION }));
 
 const PORT = process.env.PORT || 5000;

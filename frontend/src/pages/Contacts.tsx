@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Plus, User, Tag } from 'lucide-react';
+import { Plus, User, Tag, UploadCloud } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Contacts = () => {
@@ -10,6 +10,10 @@ const Contacts = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newContact, setNewContact] = useState({ email: '', firstName: '', lastName: '' });
+
+  // Bulk Upload State
+  const [fileInput, setFileInput] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const fetchContacts = async () => {
     try {
@@ -41,6 +45,25 @@ const Contacts = () => {
     }
   };
 
+  const handleBulkUpload = async () => {
+    if (!fileInput) return toast.error("Please select a CSV file");
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("csvFile", fileInput);
+    try {
+      const res = await axios.post('http://localhost:5001/api/contacts/bulk', formData, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success(res.data.message);
+      setFileInput(null);
+      fetchContacts();
+    } catch(err) {
+      toast.error("Failed to process CSV file.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="animate-fade">
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -48,9 +71,17 @@ const Contacts = () => {
           <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Contacts Directory</h1>
           <p style={{ color: 'var(--text-muted)' }}>Manage your audience and tags efficiently.</p>
         </div>
-        <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setShowModal(true)}>
-          <Plus size={20} /> Add Contact
-        </button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '8px' }}>
+            <input type="file" accept=".csv" onChange={(e) => setFileInput(e.target.files?.[0] || null)} style={{ fontSize: '0.8rem', width: '200px' }} />
+            <button className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={handleBulkUpload} disabled={isUploading || !fileInput}>
+              <UploadCloud size={14}/> {isUploading ? 'Uploading...' : 'Bulk Import'}
+            </button>
+          </div>
+          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setShowModal(true)}>
+            <Plus size={20} /> Add Contact
+          </button>
+        </div>
       </header>
 
       <div className="glass-panel" style={{ overflow: 'hidden' }}>

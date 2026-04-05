@@ -11,10 +11,12 @@ const Campaigns = () => {
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
+  const [templates, setTemplates] = useState<any[]>([]);
   const [activeDispatch, setActiveDispatch] = useState<any>(null); // Track realtime progress
 
   useEffect(() => {
     fetchCampaigns();
+    fetchTemplates();
   }, []);
 
   useEffect(() => {
@@ -40,6 +42,23 @@ const Campaigns = () => {
       const res = await axios.get('http://localhost:5001/api/campaigns', { headers: { Authorization: `Bearer ${token}` } });
       setCampaigns(res.data);
     } catch (err) { }
+  };
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await axios.get('http://localhost:5001/api/templates', { headers: { Authorization: `Bearer ${token}` } });
+      setTemplates(res.data);
+    } catch (err) { }
+  };
+
+  const handleTemplateSelect = (e: any) => {
+    const templateId = e.target.value;
+    if (!templateId) return;
+    const selected = templates.find(t => t._id === templateId);
+    if (selected) {
+      setSubject(selected.subject || '');
+      setContent(selected.htmlContent || '');
+    }
   };
 
   const handleLaunch = async (e: React.FormEvent) => {
@@ -90,6 +109,12 @@ const Campaigns = () => {
           <h3 style={{ marginBottom: '1.5rem' }}>New Blast</h3>
           <form onSubmit={handleLaunch} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <input type="text" placeholder="Internal Campaign Title" value={title} onChange={e => setTitle(e.target.value)} required style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }} />
+            
+            <select onChange={handleTemplateSelect} style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', appearance: 'none' }}>
+              <option value="">-- Load from saved Template (Optional) --</option>
+              {templates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+            </select>
+
             <input type="text" placeholder="Email Subject" value={subject} onChange={e => setSubject(e.target.value)} required style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }} />
             <textarea placeholder="HTML Email Content" value={content} onChange={e => setContent(e.target.value)} required style={{ width: '100%', minHeight: '150px', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', resize: 'none' }} />
             <button type="submit" className="btn-primary" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '14px' }}>

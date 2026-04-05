@@ -1,8 +1,12 @@
 import express from "express";
+import multer from "multer";
+import csvParser from "csv-parser";
+import fs from "fs";
 import Contact from "../models/Contact.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
+const upload = multer({ dest: '/tmp/uploads/' });
 
 router.use(requireAuth);
 
@@ -34,6 +38,34 @@ router.post("/", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Failed to create contact" });
   }
+});
+
+router.post("/bulk", upload.single("csvFile"), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "File required" });
+
+  const results = [];
+  fs.createReadStream(req.file.path)
+    .pipe(csvParser())
+    .on('data', (data) => results.push(data))
+    .on('end', async () => {
+      let createdCount = 0;
+      for (const row of results) {
+        if (!row.email) continue;
+        const exists = await Contact.findOne({ userId: req.user.id, email: row.email });
+        if (!exists) {
+           await Contact.create({
+             userId: req.user.id,
+             email: row.email,
+             firstName: row.firstName || row.first_name || '',
+             lastName: row.lastName || row.last_name || '',
+             tags: ["Bulk Imported"]
+           });
+           createdCount++;
+        }
+      }
+      fs.unlinkSync(req.file.path);
+      res.json({ message: `Successfully imported ${createdCount} new contacts.` });
+    });
 });
 
 export default router;
