@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Plus, User, Tag, UploadCloud, Search } from 'lucide-react';
+import { Plus, User, Tag, UploadCloud, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Contacts = () => {
@@ -49,6 +49,15 @@ const Contacts = () => {
     finally { setIsUploading(false); }
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Delete contact "${name}"? This cannot be undone.`)) return;
+    try {
+      await axios.delete(`http://localhost:5001/api/contacts/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Contact deleted');
+      fetchContacts();
+    } catch (err) { toast.error('Delete failed'); }
+  };
+
   const filtered = contacts.filter(c =>
     (c.firstName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (c.email || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -94,14 +103,15 @@ const Contacts = () => {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Tags</th>
-                <th style={{ width: '100px' }}>Status</th>
+                <th style={{ width: '90px' }}>Status</th>
+                <th style={{ width: '60px' }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</td></tr>
+                <tr><td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No contacts found.</td></tr>
+                <tr><td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No contacts found.</td></tr>
               ) : (
                 filtered.map(c => (
                   <tr key={c._id}>
@@ -125,6 +135,11 @@ const Contacts = () => {
                       <span className={c.unsubscribed ? 'badge badge-warning' : 'badge badge-success'}>
                         {c.unsubscribed ? 'Unsub' : 'Active'}
                       </span>
+                    </td>
+                    <td>
+                      <button onClick={() => handleDelete(c._id, c.firstName || c.email)} title="Delete" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.15s' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
+                        <Trash2 size={14} />
+                      </button>
                     </td>
                   </tr>
                 ))

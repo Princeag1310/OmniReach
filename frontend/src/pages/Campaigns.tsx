@@ -14,7 +14,8 @@ const Campaigns = () => {
   const [templates, setTemplates] = useState<any[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
-  const [scheduledAt, setScheduledAt] = useState('');
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
   const [activeDispatch, setActiveDispatch] = useState<any>(null);
 
   useEffect(() => { fetchCampaigns(); fetchTemplates(); fetchContacts(); }, []);
@@ -50,11 +51,12 @@ const Campaigns = () => {
     try {
       const payload: any = { title, subject, content };
       if (selectedContacts.length > 0) payload.targetContacts = selectedContacts;
+      const scheduledAt = scheduleDate && scheduleTime ? `${scheduleDate}T${scheduleTime}` : '';
       if (scheduledAt) payload.scheduledAt = new Date(scheduledAt).toISOString();
       const res = await axios.post('http://localhost:5001/api/campaigns/send', payload, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(res.data.message);
-      if (!scheduledAt) setActiveDispatch({ id: res.data.campaignId, progress: 0, status: 'SENDING', sent: 0, total: res.data.totalTarget });
-      setTitle(''); setSubject(''); setContent(''); setScheduledAt(''); setSelectedContacts([]);
+      if (!(scheduleDate && scheduleTime)) setActiveDispatch({ id: res.data.campaignId, progress: 0, status: 'SENDING', sent: 0, total: res.data.totalTarget });
+      setTitle(''); setSubject(''); setContent(''); setScheduleDate(''); setScheduleTime(''); setSelectedContacts([]);
       fetchCampaigns();
     } catch (err: any) { toast.error(err.response?.data?.error || "Failed"); }
   };
@@ -116,14 +118,28 @@ const Campaigns = () => {
             <textarea placeholder="HTML Content" value={content} onChange={e => setContent(e.target.value)} required className="input-field" style={{ minHeight: '80px', resize: 'none', fontFamily: 'monospace', fontSize: '0.75rem' }} />
 
             <div>
-              <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: 600, marginBottom: '3px' }}>
-                <Clock size={10} /> Schedule
+              <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: 600, marginBottom: '5px' }}>
+                <Clock size={10} /> Schedule (Optional)
               </label>
-              <input type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} className="input-field" style={{ fontSize: '0.8rem' }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '2px', display: 'block' }}>Date</label>
+                  <input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="input-field" style={{ fontSize: '0.8rem', cursor: 'pointer' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '2px', display: 'block' }}>Time</label>
+                  <input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="input-field" style={{ fontSize: '0.8rem', cursor: 'pointer' }} />
+                </div>
+              </div>
+              {scheduleDate && scheduleTime && (
+                <p style={{ fontSize: '0.7rem', color: 'var(--accent)', marginTop: '4px' }}>
+                  Scheduled: {new Date(`${scheduleDate}T${scheduleTime}`).toLocaleString()}
+                </p>
+              )}
             </div>
 
             <button type="submit" className="btn-primary" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '5px', padding: '10px', fontSize: '0.85rem' }}>
-              <Send size={14} /> {scheduledAt ? "Schedule" : "Launch Now"}
+              <Send size={14} /> {scheduleDate && scheduleTime ? "Schedule" : "Launch Now"}
             </button>
           </form>
         </div>

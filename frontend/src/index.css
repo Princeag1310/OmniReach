@@ -270,3 +270,15 @@ input::placeholder, textarea::placeholder {
 .input-field::placeholder {
   color: var(--text-muted);
 }
+
+/* Style native date/time pickers for dark mode */
+input[type="date"],
+input[type="time"] {
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
