@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Bot, User as UserIcon, Save, FileText, Settings, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ReactMarkdown from 'react-markdown';
 
 const Templates = () => {
   const { token } = useAuth();
@@ -156,7 +157,7 @@ const Templates = () => {
                 {messages.map((m, idx) => (
                    <div key={idx} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%', display: 'flex', gap: '8px' }}>
                       {m.role === 'model' && <div style={{ marginTop: '5px' }}><Bot size={16} color="#ec4899" /></div>}
-                      <div style={{ 
+                      <div className="markdown-body" style={{ 
                           background: m.role === 'user' ? '#6366f1' : 'rgba(255,255,255,0.1)', 
                           padding: '12px 16px', 
                           borderRadius: '12px',
@@ -166,7 +167,11 @@ const Templates = () => {
                           fontSize: '0.95rem',
                           lineHeight: '1.4'
                       }}>
-                          {m.parts[0].text}
+                          {m.role === 'model' ? (
+                             <ReactMarkdown>{m.parts[0].text}</ReactMarkdown>
+                          ) : (
+                             m.parts[0].text
+                          )}
                       </div>
                    </div>
                 ))}
