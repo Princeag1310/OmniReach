@@ -60,7 +60,8 @@ router.post("/send", async (req, res) => {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Personalize and Unsubscribe insertion
-        const unsubLink = `http://localhost:5001/api/contacts/unsubscribe/${c._id}`;
+        const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+        const unsubLink = `${backendUrl}/api/contacts/unsubscribe/${c._id}`;
         let personalizedContent = content.replace(/{{firstName}}/g, c.firstName || "Friend");
         personalizedContent += `<br/><br/><p style="font-size: 11px; color: #888;">To stop receiving these emails, <a href="${unsubLink}">click here to unsubscribe</a>.</p>`;
         
