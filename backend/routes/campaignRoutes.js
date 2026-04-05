@@ -10,7 +10,7 @@ router.use(requireAuth);
 
 router.post("/send", async (req, res) => {
   try {
-    const { title, subject, content, targetTags } = req.body;
+    const { title, subject, content, targetTags, targetContacts, scheduledAt } = req.body;
     
     // Create Draft Campaign
     const campaign = new Campaign({
@@ -20,13 +20,18 @@ router.post("/send", async (req, res) => {
       content,
       senderName: "OmniReach Dashboard",
       senderEmail: process.env.AWS_SES_SENDER,
-      status: "SENDING"
+      status: scheduledAt ? "SCHEDULED" : "SENDING",
+      scheduledAt: scheduledAt || null,
+      targetTags: targetTags || [],
+      targetContacts: targetContacts || []
     });
     await campaign.save();
 
     // Fetch Target Contacts
     let query = { userId: req.user.id, unsubscribed: false };
-    if (targetTags && targetTags.length > 0) {
+    if (targetContacts && targetContacts.length > 0) {
+        query._id = { $in: targetContacts };
+    } else if (targetTags && targetTags.length > 0) {
         query.tags = { $in: targetTags };
     }
     const contacts = await Contact.find(query);
@@ -35,6 +40,10 @@ router.post("/send", async (req, res) => {
       campaign.status = "FAILED";
       await campaign.save();
       return res.status(400).json({ error: "No active contacts found for this audience" });
+    }
+
+    if (scheduledAt) {
+      return res.status(202).json({ message: "Campaign scheduled successfully!", campaignId: campaign._id, totalTarget: contacts.length });
     }
 
     res.status(202).json({ message: "Campaign dispatch started!", campaignId: campaign._id, totalTarget: contacts.length });
@@ -49,8 +58,13 @@ router.post("/send", async (req, res) => {
         
         // Wait 1 second between sends to respect Sandbox/general rate limits for the portfolio demo
         await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Personalize and Unsubscribe insertion
+        const unsubLink = `http://localhost:5001/api/contacts/unsubscribe/${c._id}`;
+        let personalizedContent = content.replace(/{{firstName}}/g, c.firstName || "Friend");
+        personalizedContent += `<br/><br/><p style="font-size: 11px; color: #888;">To stop receiving these emails, <a href="${unsubLink}">click here to unsubscribe</a>.</p>`;
         
-        await sendEmailViaSES(c.email, subject, content, process.env.AWS_SES_SENDER);
+        await sendEmailViaSES(c.email, subject, personalizedContent, process.env.AWS_SES_SENDER);
         
         sentCount++;
         io.emit(`campaignStatus:${campaign._id}`, {

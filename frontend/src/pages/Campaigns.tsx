@@ -12,11 +12,15 @@ const Campaigns = () => {
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [templates, setTemplates] = useState<any[]>([]);
-  const [activeDispatch, setActiveDispatch] = useState<any>(null); // Track realtime progress
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [scheduledAt, setScheduledAt] = useState('');
+  const [activeDispatch, setActiveDispatch] = useState<any>(null);
 
   useEffect(() => {
     fetchCampaigns();
     fetchTemplates();
+    fetchContacts();
   }, []);
 
   useEffect(() => {
@@ -51,6 +55,13 @@ const Campaigns = () => {
     } catch (err) { }
   };
 
+  const fetchContacts = async () => {
+    try {
+        const res = await axios.get('http://localhost:5001/api/contacts', { headers: { Authorization: `Bearer ${token}` } });
+        setContacts(res.data);
+    } catch (err) {}
+  };
+
   const handleTemplateSelect = (e: any) => {
     const templateId = e.target.value;
     if (!templateId) return;
@@ -64,13 +75,19 @@ const Campaigns = () => {
   const handleLaunch = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5001/api/campaigns/send', { title, subject, content }, { headers: { Authorization: `Bearer ${token}` } });
+      const payload: any = { title, subject, content };
+      if (selectedContacts.length > 0) payload.targetContacts = selectedContacts;
+      if (scheduledAt) payload.scheduledAt = new Date(scheduledAt).toISOString();
+
+      const res = await axios.post('http://localhost:5001/api/campaigns/send', payload, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(res.data.message);
       
-      // Start real-time tracking
-      setActiveDispatch({ id: res.data.campaignId, progress: 0, status: 'SENDING', sent: 0, total: res.data.totalTarget });
+      if (!scheduledAt) {
+          setActiveDispatch({ id: res.data.campaignId, progress: 0, status: 'SENDING', sent: 0, total: res.data.totalTarget });
+      }
       
-      setTitle(''); setSubject(''); setContent('');
+      setTitle(''); setSubject(''); setContent(''); setScheduledAt(''); setSelectedContacts([]);
+      fetchCampaigns();
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Failed to launch campaign");
     }
@@ -83,7 +100,6 @@ const Campaigns = () => {
         <p style={{ color: 'var(--text-muted)' }}>Launch broadcasts and track real-time delivery via WebSockets.</p>
       </header>
 
-      {/* Real-time Progress Widget */}
       {activeDispatch && (
         <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem', border: '1px solid var(--primary-color)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -104,7 +120,6 @@ const Campaigns = () => {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(400px, 1fr) 2fr', gap: '2rem' }}>
-        {/* Create Campaign */}
         <div className="glass-panel" style={{ padding: '2rem' }}>
           <h3 style={{ marginBottom: '1.5rem' }}>New Blast</h3>
           <form onSubmit={handleLaunch} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -115,34 +130,60 @@ const Campaigns = () => {
               {templates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
             </select>
 
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Target Audience (Leave empty to send to ALL subscribed contacts)</label>
+              <select multiple value={selectedContacts} onChange={e => {
+                const values = Array.from(e.target.selectedOptions, option => option.value);
+                setSelectedContacts(values);
+              }} style={{ width: '100%', height: '80px', padding: '8px', background: 'rgba(0,0,0,0.4)', color: 'white', border: 'none', borderRadius: '4px' }}>
+                {contacts.filter(c => !c.unsubscribed).map(c => (
+                  <option key={c._id} value={c._id}>{c.firstName || 'User'} ({c.email})</option>
+                ))}
+              </select>
+            </div>
+
             <input type="text" placeholder="Email Subject" value={subject} onChange={e => setSubject(e.target.value)} required style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }} />
             <textarea placeholder="HTML Email Content" value={content} onChange={e => setContent(e.target.value)} required style={{ width: '100%', minHeight: '150px', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', resize: 'none' }} />
-            <button type="submit" className="btn-primary" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '14px' }}>
-              <Send size={18} /> Launch Campaign
+            
+            <div>
+              <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Schedule For (Optional, leave blank to send instantly)</label>
+              <input type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }} />
+            </div>
+
+            <button type="submit" className="btn-primary" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '14px', marginTop: '10px' }}>
+              <Send size={18} /> {scheduledAt ? "Schedule Campaign" : "Launch Campaign"}
             </button>
           </form>
         </div>
 
-        {/* Campaign History */}
-        <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>Recent Campaigns</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {campaigns.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No campaigns launched yet.</p> : null}
-            {campaigns.map(c => (
-              <div key={c._id} style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', border: 'var(--glass-border)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: '4px' }}>{c.title}</h4>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Subject: {c.subject}</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: c.status === 'COMPLETED' ? '#10b981' : '#f59e0b', marginBottom: '4px' }}>
-                    {c.status === 'COMPLETED' ? <CheckCircle size={16} /> : <Activity size={16} />} 
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{c.status}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="glass-panel" style={{ padding: '2rem' }}>
+            <h3 style={{ marginBottom: '1.5rem' }}>Visual HTML Preview</h3>
+            <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', minHeight: '150px', width: '100%', overflow: 'auto', border: '1px solid #ccc' }}>
+              <div dangerouslySetInnerHTML={{ __html: content ? content.replace(/{{firstName}}/g, "Demo User") : "<p style='color:#888'>Preview will appear here...</p>" }} />
+            </div>
+          </div>
+
+          <div className="glass-panel" style={{ padding: '2rem' }}>
+            <h3 style={{ marginBottom: '1.5rem' }}>Recent Campaigns</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {campaigns.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No campaigns launched yet.</p> : null}
+              {campaigns.map(c => (
+                <div key={c._id} style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', border: 'var(--glass-border)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h4 style={{ fontSize: '1.1rem', marginBottom: '4px' }}>{c.title}</h4>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Subject: {c.subject}</p>
                   </div>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{c.stats.delivered} / {c.stats.totalSent} Delivered</p>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: c.status === 'COMPLETED' ? '#10b981' : '#f59e0b', marginBottom: '4px' }}>
+                      {c.status === 'COMPLETED' ? <CheckCircle size={16} /> : <Activity size={16} />} 
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{c.status}</span>
+                    </div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{c.stats.delivered} / {c.stats.totalSent} Delivered</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>

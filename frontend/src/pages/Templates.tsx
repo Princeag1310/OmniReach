@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Wand2, Save, FileText } from 'lucide-react';
@@ -11,6 +11,18 @@ const Templates = () => {
   const [content, setContent] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [savedTemplates, setSavedTemplates] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await axios.get('http://localhost:5001/api/templates', { headers: { Authorization: `Bearer ${token}` } });
+      setSavedTemplates(res.data);
+    } catch (err) {}
+  };
 
   const generateWithAI = async () => {
     if (!prompt) return toast.error("Please describe what you want the email to be about.");
@@ -37,6 +49,7 @@ const Templates = () => {
       });
       toast.success("Template saved successfully to your Directory!");
       setTemplateName('');
+      fetchTemplates();
     } catch(err) {
       toast.error("Failed to save template.");
     }
@@ -49,36 +62,56 @@ const Templates = () => {
         <p style={{ color: 'var(--text-muted)' }}>Describe what you want to say, and let AI write the perfect email.</p>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(400px, 1fr) 1.5fr', gap: '2rem' }}>
         {/* Left Side: Generator */}
         <div className="glass-panel" style={{ padding: '2rem' }}>
           <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><Wand2 size={20} color="#ec4899" /> Prompt Engine</h3>
           <textarea 
             value={prompt} onChange={(e) => setPrompt(e.target.value)}
-            placeholder="E.g., Write a welcome email for new users joining OmniReach, emphasizing our real-time tracking features."
+            placeholder="E.g., Write a welcome email for new users joining OmniReach, emphasizing our real-time tracking features. Use {{firstName}} for personalization."
             style={{ width: '100%', height: '150px', padding: '15px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', outline: 'none', resize: 'none', marginBottom: '1rem' }}
           />
-          <button className="btn-primary" style={{ width: '100%' }} onClick={generateWithAI} disabled={isGenerating}>
+          <button className="btn-primary" style={{ width: '100%', marginBottom: '2rem' }} onClick={generateWithAI} disabled={isGenerating}>
             {isGenerating ? "Synthesizing..." : "Generate Email"}
           </button>
+
+          <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>Saved Gallery</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+            {savedTemplates.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No templates saved yet.</p>}
+            {savedTemplates.map(t => (
+              <div key={t._id} onClick={() => { setSubject(t.subject); setContent(t.htmlContent); setTemplateName(t.name); }} style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <strong>{t.name}</strong>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t.subject}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Right Side: Preview Editor */}
-        <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FileText size={20} color="#6366f1" /> Editor</h3>
-            <input type="text" placeholder="Template Save Name" value={templateName} onChange={e => setTemplateName(e.target.value)} style={{ padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'white', outline: 'none' }} />
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FileText size={20} color="#6366f1" /> Editor</h3>
+              <input type="text" placeholder="Template Save Name" value={templateName} onChange={e => setTemplateName(e.target.value)} style={{ padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'white', outline: 'none' }} />
+            </div>
           
-          <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Subject Line</label>
-          <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', outline: 'none', marginBottom: '1.5rem' }} />
+            <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Subject Line</label>
+            <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', outline: 'none', marginBottom: '1.5rem' }} />
 
-          <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>HTML Content</label>
-          <textarea value={content} onChange={(e) => setContent(e.target.value)} style={{ width: '100%', flex: 1, minHeight: '300px', padding: '15px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', outline: 'none', resize: 'none', fontFamily: 'monospace' }} />
+            <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>HTML Content</label>
+            <textarea value={content} onChange={(e) => setContent(e.target.value)} style={{ width: '100%', flex: 1, minHeight: '300px', padding: '15px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', outline: 'none', resize: 'none', fontFamily: 'monospace' }} />
 
-          <button style={{ marginTop: '1.5rem', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.5)', padding: '10px', borderRadius: '8px', fontWeight: 600, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={handleSave}>
-            <Save size={18} /> Save Template
-          </button>
+            <button style={{ marginTop: '1.5rem', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.5)', padding: '10px', borderRadius: '8px', fontWeight: 600, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={handleSave}>
+              <Save size={18} /> Save Template
+            </button>
+          </div>
+
+          <div className="glass-panel" style={{ padding: '2rem' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Live Visual Preview</h3>
+            <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', minHeight: '200px', width: '100%', overflow: 'auto', border: '1px solid #ccc' }}>
+              <div dangerouslySetInnerHTML={{ __html: content || "<p style='color:#888'>Preview will appear here...</p>" }} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

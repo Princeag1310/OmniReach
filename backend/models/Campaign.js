@@ -8,8 +8,10 @@ const campaignSchema = new mongoose.Schema({
   senderEmail: { type: String, required: true },
   content: { type: String, required: true }, // HTML content or simple text
   type: { type: String, enum: ["EMAIL", "SMS"], default: "EMAIL" },
-  status: { type: String, enum: ["DRAFT", "SENDING", "COMPLETED", "FAILED"], default: "DRAFT" },
+  status: { type: String, enum: ["DRAFT", "SCHEDULED", "SENDING", "COMPLETED", "FAILED"], default: "DRAFT" },
+  scheduledAt: { type: Date },
   targetTags: [{ type: String }], // Send to contacts containing any of these tags
+  targetContacts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Contact" }], // Or explicitly selected contacts
   stats: {
     totalSent: { type: Number, default: 0 },
     delivered: { type: Number, default: 0 },

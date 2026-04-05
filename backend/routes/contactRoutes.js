@@ -8,6 +8,20 @@ import { requireAuth } from "../middleware/auth.js";
 const router = express.Router();
 const upload = multer({ dest: '/tmp/uploads/' });
 
+// Public Unsubscribe Endpoint (Must be before requireAuth)
+router.get("/unsubscribe/:id", async (req, res) => {
+  try {
+    const contact = await Contact.findByIdAndUpdate(req.params.id, { unsubscribed: true });
+    if (contact) {
+      res.send(`<h1>Successfully Unsubscribed</h1><p>You will no longer receive emails at ${contact.email}.</p>`);
+    } else {
+      res.status(404).send("Contact not found");
+    }
+  } catch (err) {
+    res.status(500).send("Server Error");
+  }
+});
+
 router.use(requireAuth);
 
 router.get("/", async (req, res) => {

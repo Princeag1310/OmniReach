@@ -11,6 +11,8 @@ import campaignRoutes from "./routes/campaignRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import templateRoutes from "./routes/templateRoutes.js";
+import webhookRoutes from "./routes/webhookRoutes.js";
+import { initScheduler } from "./cron/scheduler.js";
 
 dotenv.config();
 
@@ -44,6 +46,12 @@ io.on("connection", (socket) => {
     logger.info(`Client disconnected: ${socket.id}`);
   });
 });
+
+// Initialize Cron Scheduler
+initScheduler(io);
+
+// Unprotected Webhook Routes
+app.use("/api/webhooks", webhookRoutes);
 
 // Import Routes
 app.use("/api/auth", authRoutes);
