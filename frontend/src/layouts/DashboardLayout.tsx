@@ -66,7 +66,7 @@ const DashboardLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, overflowY: 'auto', padding: '2rem 3rem' }}>
+      <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', overflowX: 'hidden', padding: '2rem 3rem' }}>
         <Outlet />
       </main>
     </div>

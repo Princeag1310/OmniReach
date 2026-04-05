@@ -20,17 +20,11 @@ const StatCard = ({ title, value, icon, color }: any) => (
 const Dashboard = () => {
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ totalContacts: 0, totalCampaigns: 0, deliverability: '0%', bounceRate: '0%' });
+  const [stats, setStats] = useState({ totalContacts: 0, totalCampaigns: 0, deliverability: '0%', bounceRate: '0%', performanceData: [] });
 
-  // Mock data for visual appeal
-  const performanceData = [
-    { day: 'Mon', sent: 4000, opened: 2400 },
-    { day: 'Tue', sent: 3000, opened: 1398 },
-    { day: 'Wed', sent: 2000, opened: 9800 },
-    { day: 'Thu', sent: 2780, opened: 3908 },
-    { day: 'Fri', sent: 1890, opened: 4800 },
-    { day: 'Sat', sent: 2390, opened: 3800 },
-    { day: 'Sun', sent: 3490, opened: 4300 },
+  const performanceData = stats.performanceData.length > 0 ? stats.performanceData : [
+    { day: 'Mon', sent: 0, opened: 0 },
+    { day: 'Tue', sent: 0, opened: 0 }
   ];
 
   useEffect(() => {
