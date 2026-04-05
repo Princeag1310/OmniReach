@@ -108,7 +108,7 @@ const Templates = () => {
 
           <div className="glass-panel" style={{ padding: '2rem' }}>
             <h3 style={{ marginBottom: '1rem' }}>Live Visual Preview</h3>
-            <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', minHeight: '200px', width: '100%', overflow: 'auto', border: '1px solid #ccc' }}>
+            <div style={{ background: 'white', color: 'black', padding: '1rem', borderRadius: '8px', minHeight: '200px', width: '100%', overflow: 'auto', border: '1px solid #ccc' }}>
               <div dangerouslySetInnerHTML={{ __html: content || "<p style='color:#888'>Preview will appear here...</p>" }} />
             </div>
           </div>

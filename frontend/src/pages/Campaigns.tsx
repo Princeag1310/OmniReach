@@ -159,7 +159,7 @@ const Campaigns = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="glass-panel" style={{ padding: '2rem' }}>
             <h3 style={{ marginBottom: '1.5rem' }}>Visual HTML Preview</h3>
-            <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', minHeight: '150px', width: '100%', overflow: 'auto', border: '1px solid #ccc' }}>
+            <div style={{ background: 'white', color: 'black', padding: '1rem', borderRadius: '8px', minHeight: '150px', width: '100%', overflow: 'auto', border: '1px solid #ccc' }}>
               <div dangerouslySetInnerHTML={{ __html: content ? content.replace(/{{firstName}}/g, "Demo User") : "<p style='color:#888'>Preview will appear here...</p>" }} />
             </div>
           </div>
