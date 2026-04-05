@@ -1,3 +1,4 @@
+import API_BASE from '../config/api';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -27,7 +28,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (token) {
-      axios.get('http://localhost:5001/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } })
+      axios.get(API_BASE + '/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } })
         .then(res => setStats(res.data)).catch(() => {});
     }
   }, [token]);

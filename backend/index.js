@@ -16,19 +16,30 @@ import { initScheduler } from "./cron/scheduler.js";
 
 dotenv.config();
 
+const isProd = process.env.NODE_ENV === "production";
+
+// Allowed origins: env var (comma-separated) or allow all in dev
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map(s => s.trim())
+  : "*";
+
 const app = express();
 const server = http.createServer(app);
-const logger = pino({ transport: { target: "pino-pretty" } });
+
+// Use pino-pretty only in development; plain JSON logs in production
+const logger = isProd
+  ? pino()
+  : pino({ transport: { target: "pino-pretty" } });
 
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: allowedOrigins,
     methods: ["GET", "POST"]
   }
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

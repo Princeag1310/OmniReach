@@ -1,3 +1,4 @@
+import API_BASE from '../config/api';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -16,7 +17,7 @@ const Contacts = () => {
 
   const fetchContacts = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/contacts', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.get(API_BASE + '/api/contacts', { headers: { Authorization: `Bearer ${token}` } });
       setContacts(res.data);
     } catch (err) { toast.error('Failed to load contacts'); }
     finally { setLoading(false); }
@@ -27,7 +28,7 @@ const Contacts = () => {
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5001/api/contacts', newContact, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(API_BASE + '/api/contacts', newContact, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('Contact added');
       setShowModal(false);
       setNewContact({ email: '', firstName: '', lastName: '' });
@@ -41,7 +42,7 @@ const Contacts = () => {
     const formData = new FormData();
     formData.append("csvFile", fileInput);
     try {
-      const res = await axios.post('http://localhost:5001/api/contacts/bulk', formData, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } });
+      const res = await axios.post(API_BASE + '/api/contacts/bulk', formData, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } });
       toast.success(res.data.message);
       setFileInput(null);
       fetchContacts();
@@ -52,7 +53,7 @@ const Contacts = () => {
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Delete contact "${name}"? This cannot be undone.`)) return;
     try {
-      await axios.delete(`http://localhost:5001/api/contacts/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`${API_BASE}/api/contacts/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('Contact deleted');
       fetchContacts();
     } catch (err) { toast.error('Delete failed'); }

@@ -1,3 +1,4 @@
+import API_BASE from '../config/api';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +23,7 @@ const Campaigns = () => {
 
   useEffect(() => {
     if (activeDispatch) {
-      const socket = io('http://localhost:5001');
+      const socket = io(API_BASE);
       socket.on(`campaignStatus:${activeDispatch.id}`, (data) => {
         setActiveDispatch((prev: any) => ({ ...prev, progress: data.progress, status: data.status, sent: data.sent, total: data.total }));
         if (data.status === 'COMPLETED') {
@@ -35,9 +36,9 @@ const Campaigns = () => {
     }
   }, [activeDispatch]);
 
-  const fetchCampaigns = async () => { try { const res = await axios.get('http://localhost:5001/api/campaigns', { headers: { Authorization: `Bearer ${token}` } }); setCampaigns(res.data); } catch (err) {} };
-  const fetchTemplates = async () => { try { const res = await axios.get('http://localhost:5001/api/templates', { headers: { Authorization: `Bearer ${token}` } }); setTemplates(res.data); } catch (err) {} };
-  const fetchContacts = async () => { try { const res = await axios.get('http://localhost:5001/api/contacts', { headers: { Authorization: `Bearer ${token}` } }); setContacts(res.data); } catch (err) {} };
+  const fetchCampaigns = async () => { try { const res = await axios.get(API_BASE + '/api/campaigns', { headers: { Authorization: `Bearer ${token}` } }); setCampaigns(res.data); } catch (err) {} };
+  const fetchTemplates = async () => { try { const res = await axios.get(API_BASE + '/api/templates', { headers: { Authorization: `Bearer ${token}` } }); setTemplates(res.data); } catch (err) {} };
+  const fetchContacts = async () => { try { const res = await axios.get(API_BASE + '/api/contacts', { headers: { Authorization: `Bearer ${token}` } }); setContacts(res.data); } catch (err) {} };
 
   const handleTemplateSelect = (e: any) => {
     const id = e.target.value;
@@ -53,7 +54,7 @@ const Campaigns = () => {
       if (selectedContacts.length > 0) payload.targetContacts = selectedContacts;
       const scheduledAt = scheduleDate && scheduleTime ? `${scheduleDate}T${scheduleTime}` : '';
       if (scheduledAt) payload.scheduledAt = new Date(scheduledAt).toISOString();
-      const res = await axios.post('http://localhost:5001/api/campaigns/send', payload, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.post(API_BASE + '/api/campaigns/send', payload, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(res.data.message);
       if (!(scheduleDate && scheduleTime)) setActiveDispatch({ id: res.data.campaignId, progress: 0, status: 'SENDING', sent: 0, total: res.data.totalTarget });
       setTitle(''); setSubject(''); setContent(''); setScheduleDate(''); setScheduleTime(''); setSelectedContacts([]);

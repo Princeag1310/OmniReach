@@ -1,3 +1,4 @@
+import API_BASE from '../config/api';
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -25,7 +26,7 @@ const Templates = () => {
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.get(API_BASE + '/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
       if (res.data.companyName) setCompanyName(res.data.companyName);
       if (res.data.companyIndustry) setCompanyIndustry(res.data.companyIndustry);
       if (res.data.brandTone) setBrandTone(res.data.brandTone);
@@ -33,12 +34,12 @@ const Templates = () => {
   };
 
   const fetchTemplates = async () => {
-    try { const res = await axios.get('http://localhost:5001/api/templates', { headers: { Authorization: `Bearer ${token}` } }); setSavedTemplates(res.data); } catch (err) {}
+    try { const res = await axios.get(API_BASE + '/api/templates', { headers: { Authorization: `Bearer ${token}` } }); setSavedTemplates(res.data); } catch (err) {}
   };
 
   const saveProfile = async () => {
     try {
-      await axios.put('http://localhost:5001/api/auth/profile', { companyName, companyIndustry, brandTone }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.put(API_BASE + '/api/auth/profile', { companyName, companyIndustry, brandTone }, { headers: { Authorization: `Bearer ${token}` } });
       toast.success("Context saved!"); setShowSettings(false);
     } catch (err) { toast.error("Save failed."); }
   };
@@ -51,7 +52,7 @@ const Templates = () => {
     setMessages(prev => [...prev, userMsg]);
     setInputVal(''); setIsGenerating(true);
     try {
-      const res = await axios.post('http://localhost:5001/api/ai/chat', { message: userMsg.parts[0].text, history: chatHistory }, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.post(API_BASE + '/api/ai/chat', { message: userMsg.parts[0].text, history: chatHistory }, { headers: { Authorization: `Bearer ${token}` } });
       const text = res.data.parts[0].text;
       try {
         const clean = text.replace(/```json/g, "").replace(/```html/g, "").replace(/```/g, "").trim();
@@ -69,7 +70,7 @@ const Templates = () => {
   const handleSave = async () => {
     if (!content) return toast.error("Nothing to save!");
     try {
-      await axios.post('http://localhost:5001/api/templates', { name: templateName || "AI Generated Template", subject, htmlContent: content }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(API_BASE + '/api/templates', { name: templateName || "AI Generated Template", subject, htmlContent: content }, { headers: { Authorization: `Bearer ${token}` } });
       toast.success("Saved!"); setTemplateName(''); fetchTemplates();
     } catch(err) { toast.error("Save failed."); }
   };

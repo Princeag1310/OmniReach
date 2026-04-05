@@ -1,3 +1,4 @@
+import API_BASE from '../config/api';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -29,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       try {
-        const res = await axios.get('http://localhost:5001/api/auth/me', {
+        const res = await axios.get(API_BASE + '/api/auth/me', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUser(res.data);

@@ -1,3 +1,4 @@
+import API_BASE from '../config/api';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -20,11 +21,11 @@ const Auth = () => {
     setLoading(true);
     try {
       if (isLogin) {
-        const res = await axios.post('http://localhost:5001/api/auth/login', { email, password });
+        const res = await axios.post(API_BASE + '/api/auth/login', { email, password });
         login(res.data.user, res.data.token);
         toast.success("Welcome back!");
       } else {
-        const res = await axios.post('http://localhost:5001/api/auth/register', { name, email, password });
+        const res = await axios.post(API_BASE + '/api/auth/register', { name, email, password });
         login(res.data.user, res.data.token);
         toast.success("Account created!");
       }
