@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 
 const Templates = () => {
   const { token } = useAuth();
-  const [messages, setMessages] = useState<any[]>([{ role: "model", parts: [{ text: "Hey! I'm your AI Email Co-Pilot. Tell me what kind of email you'd like to create, and I'll help you craft something great." }] }]);
+  const [messages, setMessages] = useState<any[]>([{ role: "model", parts: [{ text: "Hey! I'm your AI Email Co-Pilot. Tell me what kind of email you'd like to create." }] }]);
   const [inputVal, setInputVal] = useState('');
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
@@ -33,18 +33,14 @@ const Templates = () => {
   };
 
   const fetchTemplates = async () => {
-    try {
-      const res = await axios.get('http://localhost:5001/api/templates', { headers: { Authorization: `Bearer ${token}` } });
-      setSavedTemplates(res.data);
-    } catch (err) {}
+    try { const res = await axios.get('http://localhost:5001/api/templates', { headers: { Authorization: `Bearer ${token}` } }); setSavedTemplates(res.data); } catch (err) {}
   };
 
   const saveProfile = async () => {
     try {
       await axios.put('http://localhost:5001/api/auth/profile', { companyName, companyIndustry, brandTone }, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success("Company context saved!");
-      setShowSettings(false);
-    } catch (err) { toast.error("Failed to save."); }
+      toast.success("Context saved!"); setShowSettings(false);
+    } catch (err) { toast.error("Save failed."); }
   };
 
   const handleSendChat = async (e: React.FormEvent) => {
@@ -53,160 +49,124 @@ const Templates = () => {
     const userMsg = { role: "user", parts: [{ text: inputVal }] };
     const chatHistory = [...messages.slice(1)];
     setMessages(prev => [...prev, userMsg]);
-    setInputVal('');
-    setIsGenerating(true);
+    setInputVal(''); setIsGenerating(true);
     try {
       const res = await axios.post('http://localhost:5001/api/ai/chat', { message: userMsg.parts[0].text, history: chatHistory }, { headers: { Authorization: `Bearer ${token}` } });
-      const aiResponseText = res.data.parts[0].text;
+      const text = res.data.parts[0].text;
       try {
-        const cleanJson = aiResponseText.replace(/```json/g, "").replace(/```html/g, "").replace(/```/g, "").trim();
-        const parsed = JSON.parse(cleanJson);
+        const clean = text.replace(/```json/g, "").replace(/```html/g, "").replace(/```/g, "").trim();
+        const parsed = JSON.parse(clean);
         if (parsed.subject && parsed.content) {
-          setSubject(parsed.subject);
-          setContent(parsed.content);
-          setMessages(prev => [...prev, { role: "model", parts: [{ text: "✅ Done! I've populated the email in the editor. Check the preview on the right." }] }]);
-          toast.success("Email drafted!");
-          setIsGenerating(false);
-          return;
+          setSubject(parsed.subject); setContent(parsed.content);
+          setMessages(prev => [...prev, { role: "model", parts: [{ text: "✅ Email drafted! Check the editor and preview." }] }]);
+          toast.success("Email drafted!"); setIsGenerating(false); return;
         }
-      } catch (e) {
-        setMessages(prev => [...prev, { role: "model", parts: [{ text: aiResponseText }] }]);
-      }
-    } catch (err) { toast.error("AI request failed."); }
+      } catch (e) { setMessages(prev => [...prev, { role: "model", parts: [{ text }] }]); }
+    } catch (err) { toast.error("AI error."); }
     finally { setIsGenerating(false); }
   };
 
-  const handleSaveWorkspace = async () => {
+  const handleSave = async () => {
     if (!content) return toast.error("Nothing to save!");
     try {
       await axios.post('http://localhost:5001/api/templates', { name: templateName || "AI Generated Template", subject, htmlContent: content }, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success("Template saved!");
-      setTemplateName('');
-      fetchTemplates();
+      toast.success("Saved!"); setTemplateName(''); fetchTemplates();
     } catch(err) { toast.error("Save failed."); }
   };
 
   return (
     <div className="animate-fade">
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
         <div className="page-header" style={{ marginBottom: 0 }}>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Sparkles size={22} color="var(--accent)" /> AI Co-Pilot Studio</h1>
-          <p>Chat with AI to brainstorm and generate email templates.</p>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Sparkles size={18} color="var(--accent)" /> AI Co-Pilot</h1>
+          <p>Chat with AI to brainstorm and generate emails.</p>
         </div>
-        <button onClick={() => setShowSettings(!showSettings)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Settings size={14} /> Brand Profile
+        <button onClick={() => setShowSettings(!showSettings)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', padding: '6px 12px' }}>
+          <Settings size={13} /> Brand
         </button>
       </div>
 
-      {/* Settings */}
       {showSettings && (
-        <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.25rem', border: '1px solid var(--primary)' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.5rem' }}>Company Context</h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.8rem' }}>The AI will auto-use this info in every conversation.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '0.75rem' }}>
-            <input type="text" placeholder="Company Name" value={companyName} onChange={e => setCompanyName(e.target.value)} className="input-field" />
-            <input type="text" placeholder="Industry" value={companyIndustry} onChange={e => setCompanyIndustry(e.target.value)} className="input-field" />
-            <input type="text" placeholder="Brand Tone" value={brandTone} onChange={e => setBrandTone(e.target.value)} className="input-field" />
+        <div className="glass-panel" style={{ padding: '1.25rem', marginBottom: '1rem', border: '1px solid var(--primary)' }}>
+          <h3 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.75rem' }}>Company Context</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <input type="text" placeholder="Company Name" value={companyName} onChange={e => setCompanyName(e.target.value)} className="input-field" style={{ fontSize: '0.8rem' }} />
+            <input type="text" placeholder="Industry" value={companyIndustry} onChange={e => setCompanyIndustry(e.target.value)} className="input-field" style={{ fontSize: '0.8rem' }} />
+            <input type="text" placeholder="Tone" value={brandTone} onChange={e => setBrandTone(e.target.value)} className="input-field" style={{ fontSize: '0.8rem' }} />
           </div>
-          <button onClick={saveProfile} className="btn-primary" style={{ padding: '8px 18px', fontSize: '0.8rem' }}>Save</button>
+          <button onClick={saveProfile} className="btn-primary" style={{ padding: '6px 14px', fontSize: '0.75rem' }}>Save</button>
         </div>
       )}
 
-      {/* Main Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '1rem', minHeight: 0 }}>
+      {/* Two-column layout - fully flexible */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.3fr)', gap: '0.75rem' }}>
         {/* Left: Chat + Gallery */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
-          <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', height: '520px', overflow: 'hidden' }}>
-            {/* Chat Header */}
-            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Bot color="var(--accent)" size={18} />
-              <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>AI Assistant</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: 0 }}>
+          <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 220px)', minHeight: '400px', overflow: 'hidden' }}>
+            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Bot color="var(--accent)" size={16} />
+              <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>AI Assistant</span>
             </div>
-            {/* Messages */}
-            <div style={{ flex: 1, padding: '1rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ flex: 1, padding: '0.75rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {messages.map((m, idx) => (
-                <div key={idx} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%', display: 'flex', gap: '6px' }}>
-                  {m.role === 'model' && <Bot size={14} color="var(--accent)" style={{ marginTop: '4px', flexShrink: 0 }} />}
+                <div key={idx} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '90%', display: 'flex', gap: '5px' }}>
+                  {m.role === 'model' && <Bot size={12} color="var(--accent)" style={{ marginTop: '6px', flexShrink: 0 }} />}
                   <div className={m.role === 'model' ? 'markdown-body' : ''} style={{
                     background: m.role === 'user' ? 'var(--primary)' : 'var(--bg-elevated)',
-                    padding: '10px 14px', borderRadius: '12px',
-                    borderTopRightRadius: m.role === 'user' ? '2px' : '12px',
-                    borderTopLeftRadius: m.role === 'model' ? '2px' : '12px',
-                    fontSize: '0.85rem', lineHeight: '1.5',
+                    padding: '8px 12px', borderRadius: '10px',
+                    borderTopRightRadius: m.role === 'user' ? '2px' : '10px',
+                    borderTopLeftRadius: m.role === 'model' ? '2px' : '10px',
+                    fontSize: '0.8rem', lineHeight: '1.45', wordBreak: 'break-word',
                   }}>
                     {m.role === 'model' ? <ReactMarkdown>{m.parts[0].text}</ReactMarkdown> : m.parts[0].text}
                   </div>
                 </div>
               ))}
-              {isGenerating && (
-                <div style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                  <div className="animate-pulse">●</div> Thinking...
-                </div>
-              )}
+              {isGenerating && <div style={{ padding: '6px', color: 'var(--text-muted)', fontSize: '0.75rem' }} className="animate-pulse">Thinking...</div>}
               <div ref={chatEndRef} />
             </div>
-            {/* Input */}
-            <form onSubmit={handleSendChat} style={{ padding: '0.75rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px' }}>
-              <input
-                type="text" value={inputVal} onChange={e => setInputVal(e.target.value)}
-                placeholder="Describe your email idea..."
-                className="input-field" style={{ borderRadius: '20px', padding: '10px 16px', flex: 1 }}
-              />
-              <button type="submit" disabled={isGenerating} style={{
-                width: '38px', height: '38px', borderRadius: '50%',
-                background: 'var(--accent)', border: 'none', color: 'white',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, transition: 'opacity 0.2s', opacity: isGenerating ? 0.5 : 1,
-              }}>
-                <Send size={15} />
+            <form onSubmit={handleSendChat} style={{ padding: '0.6rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '6px' }}>
+              <input type="text" value={inputVal} onChange={e => setInputVal(e.target.value)} placeholder="Describe your email..." className="input-field" style={{ borderRadius: '18px', padding: '8px 14px', flex: 1, fontSize: '0.8rem' }} />
+              <button type="submit" disabled={isGenerating} style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--accent)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: isGenerating ? 0.4 : 1 }}>
+                <Send size={13} />
               </button>
             </form>
           </div>
 
-          {/* Saved Gallery */}
-          <div className="glass-panel" style={{ padding: '1rem 1.25rem', maxHeight: '180px', overflowY: 'auto' }}>
-            <h4 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Saved Templates</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {savedTemplates.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>No templates saved yet.</p>}
-              {savedTemplates.map(t => (
-                <div key={t._id} onClick={() => { setSubject(t.subject); setContent(t.htmlContent); setTemplateName(t.name); }}
-                  style={{ padding: '8px 10px', background: 'var(--bg-input)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', transition: 'background 0.15s' }}>
-                  {t.name}
-                </div>
-              ))}
-            </div>
+          <div className="glass-panel" style={{ padding: '0.75rem 1rem', maxHeight: '160px', overflowY: 'auto' }}>
+            <h4 style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>Saved Templates</h4>
+            {savedTemplates.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>None yet.</p>}
+            {savedTemplates.map(t => (
+              <div key={t._id} onClick={() => { setSubject(t.subject); setContent(t.htmlContent); setTemplateName(t.name); }}
+                style={{ padding: '6px 8px', background: 'var(--bg-input)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', marginBottom: '3px' }}>
+                {t.name}
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Right: Editor + Preview */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem', fontWeight: 600 }}>
-                <FileText size={16} color="var(--primary)" /> Editor
-              </h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="text" placeholder="Template name" value={templateName} onChange={e => setTemplateName(e.target.value)} className="input-field" style={{ width: '160px', padding: '6px 10px', fontSize: '0.8rem' }} />
-                <button onClick={handleSaveWorkspace} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', fontSize: '0.8rem', color: 'var(--success)', borderColor: 'rgba(52,211,153,0.3)' }}>
-                  <Save size={13} /> Save
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: 0 }}>
+          <div className="glass-panel" style={{ padding: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '6px', flexWrap: 'wrap' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem', fontWeight: 600 }}><FileText size={14} color="var(--primary)" /> Editor</h3>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input type="text" placeholder="Name" value={templateName} onChange={e => setTemplateName(e.target.value)} className="input-field" style={{ width: '120px', padding: '5px 8px', fontSize: '0.75rem' }} />
+                <button onClick={handleSave} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 10px', fontSize: '0.75rem', color: 'var(--success)' }}>
+                  <Save size={11} /> Save
                 </button>
               </div>
             </div>
-            <label style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px', display: 'block' }}>Subject</label>
-            <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} className="input-field" style={{ marginBottom: '1rem' }} />
-            <label style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px', display: 'block' }}>HTML Source</label>
-            <textarea value={content} onChange={(e) => setContent(e.target.value)} className="input-field" style={{ minHeight: '120px', resize: 'vertical', fontFamily: 'monospace', fontSize: '0.8rem', lineHeight: '1.5' }} />
+            <label style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px', display: 'block' }}>Subject</label>
+            <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} className="input-field" style={{ marginBottom: '0.75rem', fontSize: '0.8rem' }} />
+            <label style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px', display: 'block' }}>HTML Source</label>
+            <textarea value={content} onChange={(e) => setContent(e.target.value)} className="input-field" style={{ minHeight: '100px', resize: 'vertical', fontFamily: 'monospace', fontSize: '0.75rem', lineHeight: '1.5' }} />
           </div>
 
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.75rem' }}>Live Preview</h3>
+          <div className="glass-panel" style={{ padding: '1.25rem' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.6rem' }}>Live Preview</h3>
             <div style={{ background: 'white', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border)' }}>
-              <iframe
-                srcDoc={content || "<div style='padding:24px;color:#aaa;font-family:sans-serif;text-align:center;'>Email preview will appear here</div>"}
-                style={{ width: '100%', height: '350px', border: 'none', display: 'block' }}
-                title="Email Preview"
-              />
+              <iframe srcDoc={content || "<div style='padding:20px;color:#aaa;font-family:sans-serif;text-align:center;font-size:14px;'>Email preview will appear here</div>"} style={{ width: '100%', height: '300px', border: 'none', display: 'block' }} title="Preview" />
             </div>
           </div>
         </div>
