@@ -7,6 +7,8 @@ import { Server } from "socket.io";
 import pino from "pino";
 import authRoutes from "./routes/authRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
+import campaignRoutes from "./routes/campaignRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 dotenv.config();
 
@@ -44,6 +46,8 @@ io.on("connection", (socket) => {
 // Import Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/contacts", contactRoutes);
+app.use("/api/campaigns", campaignRoutes);
+app.use("/api/ai", aiRoutes);
 app.get("/api/health", (req, res) => res.status(200).json({ status: "OK", awsRegion: process.env.AWS_REGION }));
 
 const PORT = process.env.PORT || 5000;

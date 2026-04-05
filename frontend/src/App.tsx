@@ -5,6 +5,8 @@ import Auth from './pages/Auth';
 import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import Contacts from './pages/Contacts';
+import Templates from './pages/Templates';
+import Campaigns from './pages/Campaigns';
 import './index.css';
 
 function App() {
@@ -18,8 +20,8 @@ function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/contacts" element={<Contacts />} />
-            <Route path="/templates" element={<div style={{padding:'2rem'}}>Templates Placeholder</div>} />
-            <Route path="/campaigns" element={<div style={{padding:'2rem'}}>Campaigns Placeholder</div>} />
+            <Route path="/templates" element={<Templates />} />
+            <Route path="/campaigns" element={<Campaigns />} />
           </Route>
         </Routes>
       </Router>
