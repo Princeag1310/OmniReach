@@ -18,7 +18,7 @@ router.post("/generate", async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const aiPrompt = `You are an expert marketing copywriter. Write a professional, high-converting email based on the following intent. Return JSON ONLY with no markdown wrapping, structured like this: {"subject": "...", "content": "<p>HTML formatted body...</p>"}\nIntent: ${prompt}`;
     
