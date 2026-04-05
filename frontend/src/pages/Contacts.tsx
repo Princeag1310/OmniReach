@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Plus, User, Tag, UploadCloud } from 'lucide-react';
+import { Plus, User, Tag, UploadCloud, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Contacts = () => {
@@ -10,10 +10,9 @@ const Contacts = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newContact, setNewContact] = useState({ email: '', firstName: '', lastName: '' });
-
-  // Bulk Upload State
   const [fileInput, setFileInput] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchContacts = async () => {
     try {
@@ -64,58 +63,80 @@ const Contacts = () => {
     }
   };
 
+  const filtered = contacts.filter(c =>
+    (c.firstName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.email || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="animate-fade">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Contacts Directory</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Manage your audience and tags efficiently.</p>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <h1>Contacts</h1>
+          <p>Manage your audience and subscriber list.</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '8px' }}>
-            <input type="file" accept=".csv" onChange={(e) => setFileInput(e.target.files?.[0] || null)} style={{ fontSize: '0.8rem', width: '200px' }} />
-            <button className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={handleBulkUpload} disabled={isUploading || !fileInput}>
-              <UploadCloud size={14}/> {isUploading ? 'Uploading...' : 'Bulk Import'}
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-input)', border: '1px solid var(--border)', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
+            <input type="file" accept=".csv" onChange={(e) => setFileInput(e.target.files?.[0] || null)} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', width: '140px', border: 'none', background: 'transparent', outline: 'none' }} />
+            <button className="btn-primary" style={{ padding: '5px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={handleBulkUpload} disabled={isUploading || !fileInput}>
+              <UploadCloud size={12}/> {isUploading ? '...' : 'Import'}
             </button>
           </div>
-          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setShowModal(true)}>
-            <Plus size={20} /> Add Contact
+          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px' }} onClick={() => setShowModal(true)}>
+            <Plus size={16} /> Add Contact
           </button>
         </div>
-      </header>
+      </div>
 
+      {/* Search */}
+      <div style={{ marginBottom: '1rem', position: 'relative', maxWidth: '320px' }}>
+        <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+        <input
+          type="text" placeholder="Search contacts..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+          className="input-field" style={{ paddingLeft: '34px' }}
+        />
+      </div>
+
+      {/* Table */}
       <div className="glass-panel" style={{ overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <table className="data-table">
           <thead>
-            <tr style={{ background: 'rgba(255,255,255,0.05)', borderBottom: 'var(--glass-border)' }}>
-              <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Name</th>
-              <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Email</th>
-              <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Tags</th>
-              <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Status</th>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Tags</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center' }}>Loading...</td></tr>
-            ) : contacts.length === 0 ? (
-              <tr><td colSpan={4} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>No contacts found. Add your first one!</td></tr>
+              <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</td></tr>
+            ) : filtered.length === 0 ? (
+              <tr><td colSpan={4} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>No contacts found.</td></tr>
             ) : (
-              contacts.map(c => (
-                <tr key={c._id} style={{ borderBottom: 'var(--glass-border)' }}>
-                  <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:'var(--card-bg)', display:'flex', alignItems:'center', justifyContent:'center'}}>
-                      <User size={16} />
+              filtered.map(c => (
+                <tr key={c._id}>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <User size={14} />
+                      </div>
+                      <span style={{ fontWeight: 500 }}>{c.firstName || 'Unknown'} {c.lastName || ''}</span>
                     </div>
-                    {c.firstName || 'Unknown'} {c.lastName}
                   </td>
-                  <td style={{ padding: '1rem' }}>{c.email}</td>
-                  <td style={{ padding: '1rem' }}>
-                    {c.tags?.length > 0 ? c.tags.map((t: string) => <span key={t} style={{ padding: '4px 8px', background: 'rgba(99,102,241,0.2)', color: 'var(--primary-color)', borderRadius: '4px', fontSize: '0.8rem', marginRight: '4px' }}><Tag size={12} style={{display:'inline', marginRight:'2px'}}/>{t}</span>) : '-'}
+                  <td style={{ color: 'var(--text-secondary)' }}>{c.email}</td>
+                  <td>
+                    {c.tags?.length > 0 ? c.tags.map((t: string) => (
+                      <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 8px', background: 'rgba(124,58,237,0.1)', color: 'var(--primary)', borderRadius: '4px', fontSize: '0.75rem', marginRight: '4px', border: '1px solid rgba(124,58,237,0.2)' }}>
+                        <Tag size={10} />{t}
+                      </span>
+                    )) : <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>}
                   </td>
-                  <td style={{ padding: '1rem' }}>
-                     <span style={{ color: c.unsubscribed ? '#f59e0b' : '#10b981', background: c.unsubscribed ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.85rem' }}>
-                        {c.unsubscribed ? 'Unsubscribed' : 'Active'}
-                     </span>
+                  <td>
+                    <span className={c.unsubscribed ? 'badge badge-warning' : 'badge badge-success'}>
+                      {c.unsubscribed ? 'Unsubscribed' : 'Active'}
+                    </span>
                   </td>
                 </tr>
               ))
@@ -124,17 +145,18 @@ const Contacts = () => {
         </table>
       </div>
 
+      {/* Add Modal */}
       {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel animate-fade" style={{ background: '#1e293b', padding: '2rem', width: '100%', maxWidth: '400px' }}>
-            <h2 style={{ marginBottom: '1.5rem' }}>Add New Contact</h2>
-            <form onSubmit={handleAddSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <input type="text" placeholder="First Name" value={newContact.firstName} onChange={(e) => setNewContact({...newContact, firstName: e.target.value})} style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }} />
-              <input type="text" placeholder="Last Name" value={newContact.lastName} onChange={(e) => setNewContact({...newContact, lastName: e.target.value})} style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }} />
-              <input type="email" placeholder="Email Address" required value={newContact.email} onChange={(e) => setNewContact({...newContact, email: e.target.value})} style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }} />
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" onClick={() => setShowModal(false)} style={{ flex: 1, padding: '10px', background: 'transparent', border: 'var(--glass-border)', color: 'white', borderRadius: '8px', cursor:'pointer' }}>Cancel</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Save Contact</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="glass-panel animate-fade" style={{ background: 'var(--bg-surface)', padding: '2rem', width: '100%', maxWidth: '400px', border: '1px solid var(--border)' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '1.25rem' }}>Add Contact</h2>
+            <form onSubmit={handleAddSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <input type="text" placeholder="First Name" value={newContact.firstName} onChange={(e) => setNewContact({...newContact, firstName: e.target.value})} className="input-field" />
+              <input type="text" placeholder="Last Name" value={newContact.lastName} onChange={(e) => setNewContact({...newContact, lastName: e.target.value})} className="input-field" />
+              <input type="email" placeholder="Email Address" required value={newContact.email} onChange={(e) => setNewContact({...newContact, email: e.target.value})} className="input-field" />
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setShowModal(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Save</button>
               </div>
             </form>
           </div>

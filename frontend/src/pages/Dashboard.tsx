@@ -1,30 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Users, Send, CheckCircle, AlertTriangle, ArrowRight, Activity } from 'lucide-react';
+import { Users, Send, CheckCircle, AlertTriangle, ArrowRight, Activity, TrendingUp } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 
 const StatCard = ({ title, value, icon, color }: any) => (
-  <div className="glass-panel" style={{ padding: '1.5rem', flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-    <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: `rgba(255,255,255,0.05)`, color: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {icon}
+  <div className="glass-panel" style={{ padding: '1.2rem 1.4rem', flex: 1, minWidth: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{title}</p>
+      <div style={{ color: color, opacity: 0.6 }}>{icon}</div>
     </div>
-    <div>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>{title}</p>
-      <h3 style={{ fontSize: '1.8rem', fontWeight: 700 }}>{value}</h3>
-    </div>
+    <h3 style={{ fontSize: '1.6rem', fontWeight: 700, letterSpacing: '-0.02em' }}>{value}</h3>
   </div>
 );
 
 const Dashboard = () => {
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ totalContacts: 0, totalCampaigns: 0, deliverability: '0%', bounceRate: '0%', performanceData: [] });
+  const [stats, setStats] = useState<any>({ totalContacts: 0, totalCampaigns: 0, deliverability: '0%', bounceRate: '0%', performanceData: [] });
 
-  const performanceData = stats.performanceData.length > 0 ? stats.performanceData : [
-    { day: 'Mon', sent: 0, opened: 0 },
-    { day: 'Tue', sent: 0, opened: 0 }
+  const performanceData = stats.performanceData?.length > 0 ? stats.performanceData : [
+    { day: 'Mon', sent: 0 }, { day: 'Tue', sent: 0 }, { day: 'Wed', sent: 0 },
+    { day: 'Thu', sent: 0 }, { day: 'Fri', sent: 0 }, { day: 'Sat', sent: 0 }, { day: 'Sun', sent: 0 },
   ];
 
   useEffect(() => {
@@ -35,57 +33,76 @@ const Dashboard = () => {
     }
   }, [token]);
 
+  const quickActions = [
+    { label: 'Create Campaign', desc: 'Build and send an email blast', path: '/campaigns', gradient: 'linear-gradient(135deg, var(--primary), var(--accent))' },
+    { label: 'AI Template Studio', desc: 'Chat with AI to draft emails', path: '/templates', gradient: '' },
+    { label: 'Import Contacts', desc: 'Bulk upload via CSV', path: '/contacts', gradient: '' },
+  ];
+
   return (
     <div className="animate-fade">
-      <header style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Welcome back, {user?.name.split(' ')[0]} 👋</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Here's an overview of your campaign performance today.</p>
-      </header>
-
-      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '3rem' }}>
-        <StatCard title="Total Contacts" value={stats.totalContacts} icon={<Users size={24} />} color="#6366f1" />
-        <StatCard title="Total Campaigns" value={stats.totalCampaigns} icon={<Send size={24} />} color="#ec4899" />
-        <StatCard title="Deliverability" value={stats.deliverability} icon={<CheckCircle size={24} />} color="#10b981" />
-        <StatCard title="Bounced" value={stats.bounceRate} icon={<AlertTriangle size={24} />} color="#f59e0b" />
+      <div className="page-header">
+        <h1>Welcome back, {user?.name.split(' ')[0]} 👋</h1>
+        <p>Here's your campaign performance overview.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
-        {/* Chart Panel */}
-        <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Activity color="#6366f1" size={20} /> 7-Day Performance
-          </h3>
-          <div style={{ height: '300px', width: '100%' }}>
+      {/* Stats Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+        <StatCard title="Contacts" value={stats.totalContacts} icon={<Users size={18} />} color="var(--primary)" />
+        <StatCard title="Campaigns" value={stats.totalCampaigns} icon={<Send size={18} />} color="var(--accent)" />
+        <StatCard title="Deliverability" value={stats.deliverability} icon={<CheckCircle size={18} />} color="var(--success)" />
+        <StatCard title="Bounce Rate" value={stats.bounceRate} icon={<AlertTriangle size={18} />} color="var(--warning)" />
+      </div>
+
+      {/* Chart + Actions */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1rem' }}>
+        <div className="glass-panel" style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem' }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <TrendingUp size={16} color="var(--primary)" /> Weekly Performance
+            </h3>
+            <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Live Data</span>
+          </div>
+          <div style={{ height: '260px', width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={performanceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <AreaChart data={performanceData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorSent" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                  <linearGradient id="gradSent" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.4}/>
+                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="day" stroke="#888" tick={{ fill: '#888' }} />
-                <YAxis stroke="#888" tick={{ fill: '#888' }} />
-                <Tooltip contentStyle={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }} />
-                <Area type="monotone" dataKey="sent" stroke="#6366f1" fillOpacity={1} fill="url(#colorSent)" />
+                <XAxis dataKey="day" stroke="none" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+                <YAxis stroke="none" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                  cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                />
+                <Area type="monotone" dataKey="sent" stroke="var(--primary)" strokeWidth={2} fillOpacity={1} fill="url(#gradSent)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Quick Actions Panel */}
-        <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>Quick Actions</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
-            <button onClick={() => navigate('/campaigns')} className="btn-primary" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }}>
-               Create New Campaign <ArrowRight size={18} />
-            </button>
-            <button onClick={() => navigate('/templates')} style={{ background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-               Draft AI Template <ArrowRight size={18} />
-            </button>
-            <button onClick={() => navigate('/contacts')} style={{ background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-               Bulk Import Leads <ArrowRight size={18} />
-            </button>
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '1rem' }}>Quick Actions</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1 }}>
+            {quickActions.map((a, i) => (
+              <button key={i} onClick={() => navigate(a.path)} style={{
+                background: a.gradient || 'var(--bg-elevated)',
+                color: 'white', border: a.gradient ? 'none' : '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)', padding: '14px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font)',
+                transition: 'all 0.2s ease',
+              }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{a.label}</div>
+                  <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '2px' }}>{a.desc}</div>
+                </div>
+                <ArrowRight size={16} style={{ opacity: 0.6 }} />
+              </button>
+            ))}
           </div>
         </div>
       </div>
