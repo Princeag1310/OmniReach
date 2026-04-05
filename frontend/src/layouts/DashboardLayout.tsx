@@ -23,7 +23,7 @@ const DashboardLayout = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', height: '100vh', color: 'white' }}>
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', color: 'white' }}>
       {/* Sidebar */}
       <aside style={{ width: '260px', background: 'var(--card-bg)', borderRight: 'var(--glass-border)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '2rem 1.5rem' }}>
