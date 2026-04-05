@@ -2,7 +2,7 @@ import express from "express";
 import Campaign from "../models/Campaign.js";
 import Contact from "../models/Contact.js";
 import { requireAuth } from "../middleware/auth.js";
-import { sendEmail } from "../utils/awsSes.js";
+import { sendEmailViaSES } from "../utils/awsSes.js";
 
 const router = express.Router();
 
@@ -65,7 +65,7 @@ router.post("/send", async (req, res) => {
         let personalizedContent = content.replace(/{{firstName}}/g, c.firstName || "Friend");
         personalizedContent += `<br/><br/><p style="font-size: 11px; color: #888;">To stop receiving these emails, <a href="${unsubLink}">click here to unsubscribe</a>.</p>`;
         
-        await sendEmail(c.email, subject, personalizedContent, process.env.AWS_SES_SENDER);
+        await sendEmailViaSES(c.email, subject, personalizedContent, process.env.AWS_SES_SENDER);
         
         sentCount++;
         io.emit(`campaignStatus:${campaign._id}`, {

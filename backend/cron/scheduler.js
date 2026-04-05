@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import Campaign from '../models/Campaign.js';
 import Contact from '../models/Contact.js';
-import { sendEmail } from '../utils/awsSes.js';
+import { sendEmailViaSES } from '../utils/awsSes.js';
 
 // Setup background worker that checks every minute for scheduled campaigns
 export const initScheduler = (io) => {
@@ -48,7 +48,7 @@ export const initScheduler = (io) => {
             let personalizedContent = campaign.content.replace(/{{firstName}}/g, c.firstName || "Friend");
             personalizedContent += `<br/><br/><p style="font-size: 11px; color: #888;">To stop receiving these emails, <a href="${unsubLink}">click here to unsubscribe</a>.</p>`;
 
-            await sendEmail(c.email, campaign.subject, personalizedContent, campaign.senderEmail);
+            await sendEmailViaSES(c.email, campaign.subject, personalizedContent, campaign.senderEmail);
             
             sentCount++;
             io.emit(`campaignStatus:${campaign._id}`, {

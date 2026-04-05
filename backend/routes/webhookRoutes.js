@@ -9,7 +9,7 @@ const router = express.Router();
 router.post("/sns", express.json({ type: ['application/json', 'text/plain'] }), async (req, res) => {
   try {
     const snsType = req.headers["x-amz-sns-message-type"];
-
+    
     if (snsType === "SubscriptionConfirmation") {
       const subscribeUrl = req.body.SubscribeURL;
       // In production, you would fetch(subscribeUrl) to verify the webhook destination
@@ -24,9 +24,9 @@ router.post("/sns", express.json({ type: ['application/json', 'text/plain'] }), 
       if (notificationType === "Bounce" || notificationType === "Complaint") {
         const bouncedEmails = message.bounce ? message.bounce.bouncedRecipients.map((r) => r.emailAddress) : [];
         const complainedEmails = message.complaint ? message.complaint.complainedRecipients.map((r) => r.emailAddress) : [];
-
+        
         const allEmails = [...bouncedEmails, ...complainedEmails];
-
+        
         for (const email of allEmails) {
           // Immediately unsubscribe the user globally
           await Contact.updateMany({ email }, { unsubscribed: true });
