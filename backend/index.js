@@ -1,0 +1,52 @@
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import http from "http";
+import { Server } from "socket.io";
+import pino from "pino";
+import authRoutes from "./routes/authRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
+
+dotenv.config();
+
+const app = express();
+const server = http.createServer(app);
+const logger = pino({ transport: { target: "pino-pretty" } });
+
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => logger.info("MongoDB Connected Successfully"))
+  .catch((err) => logger.error("MongoDB Connection Error:", err));
+
+// Global Object to hold our socket instance so routes can emit events
+app.set('io', io);
+
+io.on("connection", (socket) => {
+  logger.info(`New client connected: ${socket.id}`);
+  socket.on("disconnect", () => {
+    logger.info(`Client disconnected: ${socket.id}`);
+  });
+});
+
+// Import Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/contacts", contactRoutes);
+app.get("/api/health", (req, res) => res.status(200).json({ status: "OK", awsRegion: process.env.AWS_REGION }));
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  logger.info(`OmniReach server running on port ${PORT}`);
+});
