@@ -9,6 +9,7 @@ import authRoutes from "./routes/authRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import campaignRoutes from "./routes/campaignRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 dotenv.config();
 
@@ -48,6 +49,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/contacts", contactRoutes);
 app.use("/api/campaigns", campaignRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 app.get("/api/health", (req, res) => res.status(200).json({ status: "OK", awsRegion: process.env.AWS_REGION }));
 
 const PORT = process.env.PORT || 5000;
