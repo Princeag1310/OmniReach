@@ -1,37 +1,68 @@
 import express from "express";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { requireAuth } from "../middleware/auth.js";
+import User from "../models/User.js";
 
 const router = express.Router();
 router.use(requireAuth);
 
-router.post("/generate", async (req, res) => {
+router.post("/chat", async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const { message, history } = req.body;
     
+    // Fallback if no API key
     if (!process.env.GEMINI_API_KEY) {
-      // Mock for development if they don't have an API key yet
       return res.json({ 
-        subject: "Welcome to OmniReach!",
-        content: "<p>Hello there,</p><p>This is an AI-generated draft mock because no API key was provided. Replace GEMINI_API_KEY in the `.env` to make this live.</p><p>Best,</p><br/>Your Team" 
+        role: "model",
+        parts: [{ text: "```json\n{\"subject\": \"Mock API Fallback\", \"content\": \"<p>Provide a valid GEMINI_API_KEY inside your backend .env!</p>\"}\n```" }]
       });
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    // Fetch user company profile
+    const user = await User.findById(req.user.id);
+    const companyContext = user.companyName ? `
+    COMPANY PROFILE:
+    - Name: ${user.companyName}
+    - Industry: ${user.companyIndustry || "General"}
+    - Brand Tone: ${user.brandTone || "Professional"}
+    ` : "No specific company profile provided yet.";
 
-    const aiPrompt = `You are an expert marketing copywriter. Write a professional, high-converting email based on the following intent. Return JSON ONLY with no markdown wrapping, structured like this: {"subject": "...", "content": "<p>HTML formatted body...</p>"}\nIntent: ${prompt}`;
+    const systemInstruction = `
+    You are an expert, conversational AI Email Marketing Co-Pilot. 
+    You are working directly with the user to brainstorm and construct a high-converting HTML email.
     
-    const result = await model.generateContent(aiPrompt);
-    const response = await result.response;
-    const text = response.text().replace(/```json/g, "").replace(/```/g, "");
+    ${companyContext}
     
-    const parsed = JSON.parse(text);
-    res.json(parsed);
+    RULES:
+    1. If the user's initial prompt is vague, DO NOT generate the email immediately. ASk clarifying questions about their target audience, CTA, or intent.
+    2. Maintain a friendly, consultative conversation.
+    3. Once you determine you have enough information, generate the final email.
+    4. WHEN you are ready to deliver the final email design, you MUST return it EXACTLY as a raw JSON payload (no Markdown, no surrounding conversational text in that final hop).
+    5. The final JSON payload must strictly look like this: 
+       {"subject": "A catchy subject line", "content": "<p>Full HTML layout covering everything discussed</p>"}
+    `;
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        systemInstruction
+    });
+
+    const chat = model.startChat({
+        history: history || [],
+    });
+
+    const result = await chat.sendMessage(message);
+    const responseText = await result.response.text();
+
+    res.json({
+        role: "model",
+        parts: [{ text: responseText }]
+    });
 
   } catch (err) {
-    console.error("AI Generation Error:", err);
-    res.status(500).json({ error: "Failed to generate AI content" });
+    console.error("AI Chat Error:", err);
+    res.status(500).json({ error: "Failed to process chat response" });
   }
 });
 

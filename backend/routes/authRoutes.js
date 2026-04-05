@@ -44,18 +44,34 @@ router.post("/login", async (req, res) => {
     }
 
     const token = generateToken(user._id);
-    res.status(200).json({ user: { id: user._id, name: user.name, email: user.email }, token });
+    res.status(200).json({ token, user: { id: user._id, name: user.name, email: user.email } });
   } catch (err) {
-    res.status(500).json({ error: "Server Error during login" });
+    res.status(500).json({ error: "Failed to login" });
   }
 });
 
+// Get Profile Context
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: "Server Error fetching user" });
+    res.status(500).json({ error: "Failed to fetch profile" });
+  }
+});
+
+// Update Profile Context
+router.put("/profile", requireAuth, async (req, res) => {
+  try {
+    const { companyName, companyIndustry, brandTone } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.user.id, 
+      { $set: { companyName, companyIndustry, brandTone } }, 
+      { new: true }
+    ).select("-password");
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update profile" });
   }
 });
 
