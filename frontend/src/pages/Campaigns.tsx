@@ -132,14 +132,30 @@ const Campaigns = () => {
 
             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
               <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Target Audience (Leave empty to send to ALL subscribed contacts)</label>
-              <select multiple value={selectedContacts} onChange={e => {
-                const values = Array.from(e.target.selectedOptions, option => option.value);
-                setSelectedContacts(values);
-              }} style={{ width: '100%', height: '80px', padding: '8px', background: 'rgba(0,0,0,0.4)', color: 'white', border: 'none', borderRadius: '4px' }}>
+              
+              {/* Custom Checkbox Multi-Select UX */}
+              <div style={{ width: '100%', maxHeight: '120px', overflowY: 'auto', padding: '8px', background: 'rgba(0,0,0,0.4)', color: 'white', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
                 {contacts.filter(c => !c.unsubscribed).map(c => (
-                  <option key={c._id} value={c._id}>{c.firstName || 'User'} ({c.email})</option>
+                  <label key={c._id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <input 
+                      type="checkbox" 
+                      style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ec4899' }}
+                      checked={selectedContacts.includes(c._id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedContacts(prev => [...prev, c._id]);
+                        } else {
+                          setSelectedContacts(prev => prev.filter(id => id !== c._id));
+                        }
+                      }}
+                    />
+                    <span style={{ fontSize: '0.9rem' }}>{c.firstName || 'User'} <span style={{ color: 'var(--text-muted)' }}>({c.email})</span></span>
+                  </label>
                 ))}
-              </select>
+                {contacts.filter(c => !c.unsubscribed).length === 0 && (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No active contacts found.</p>
+                )}
+              </div>
             </div>
 
             <input type="text" placeholder="Email Subject" value={subject} onChange={e => setSubject(e.target.value)} required style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }} />
