@@ -10,13 +10,24 @@ import Templates from './pages/Templates';
 import Campaigns from './pages/Campaigns';
 import './index.css';
 
-// Scroll to top on every route change
-function ScrollToTop() {
+// Scroll to top and update title on every route change
+function RouteHandler() {
   const { pathname } = useLocation();
   useEffect(() => {
     const el = document.getElementById('main-scroll');
     if (el) el.scrollTo(0, 0);
     window.scrollTo(0, 0);
+
+    // Update document title
+    const titles: Record<string, string> = {
+      '/dashboard': 'Dashboard | OmniReach',
+      '/auth': 'Login | OmniReach',
+      '/contacts': 'Contacts | OmniReach',
+      '/templates': 'Templates | OmniReach',
+      '/campaigns': 'Campaigns | OmniReach',
+    };
+
+    document.title = titles[pathname] || 'OmniReach';
   }, [pathname]);
   return null;
 }
@@ -26,7 +37,7 @@ function App() {
     <AuthProvider>
       <Toaster position="top-right" toastOptions={{ style: { background: '#1e293b', color: '#fff', fontSize: '0.85rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' } }} />
       <Router>
-        <ScrollToTop />
+        <RouteHandler />
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/auth" element={<Auth />} />
